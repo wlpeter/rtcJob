@@ -1,0 +1,8 @@
+{
+  "apiService": {
+    "port": "5566"
+  },
+  "safe": {
+    "appSecret": "witn0q73-yi19r81bfk"
+  }
+}
