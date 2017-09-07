@@ -7,6 +7,7 @@ const convert = require('koa-convert');
 const views = require('koa-views');
 const serve = require('koa-static');
 const router = require('koa-router')();
+const http = require('http');
 
 const app = new Koa();
 // 加载配置文件
@@ -22,8 +23,12 @@ app
   .use(convert(koaBody({multipart: true, formidable: {keepExtensions: true}})))
   .use(router.routes(), router.allowedMethods());
 
+// 创建服务
+const server = http.createServer(app.callback());
+// 启动通讯中心
+require('./lib/socket.js')(server);
 // 启动监听端口
-app.listen(config.apiService.port, () => {
+server.listen(config.apiService.port, () => {
   console.log(`Server has started, listen for ${config.apiService.port}`);
 });
 
