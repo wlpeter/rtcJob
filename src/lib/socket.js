@@ -144,17 +144,14 @@ module.exports =  function(server) {
               throw new Error('无权限');
             } else {
               delete callKeys[data.callKey];
-              if (allUsers[data.callKey.split('-')[0]]) {
-                allUsers[data.callKey.split('-')[0]] = 1;
-                allSockets[data.callKey.split('-')[0]].send({
+              allUsers[socket.name] = 1;
+              if (allUsers[socket.otherName]) {
+                allUsers[socket.otherName] = 1;
+                delete allSockets[socket.otherName].otherName;
+                allSockets[socket.otherName].send({
                   event: "leave"
                 });
-              }
-              if (allUsers[data.callKey.split('-')[2]]) {
-                allUsers[data.callKey.split('-')[2]] = 1;
-                allSockets[data.callKey.split('-')[2]].send({
-                  event: "leave"
-                });
+                delete socket.otherName;
               }
               socket.broadcast.emit('userReflash', allUsers);
             }
@@ -175,12 +172,19 @@ module.exports =  function(server) {
       console.log("disconnect");
       if(socket.name) {
         if (socket.otherName) {
-          delete socket.otherName;
-          allUsers[socket.otherName] = 1;
+          if (allUsers[socket.otherName]) {
+            delete allSockets[socket.otherName].otherName;
+            allUsers[socket.otherName] = 1;
+            delete socket.otherName;
+            allSockets[socket.otherName].send({
+              event: "leave"
+            });
+          }
         }
         delete allUsers[socket.name];
         delete allSockets[socket.name];
       }
+      console.log(allUsers)
       socket.broadcast.emit('userReflash', allUsers);
     });
   });

@@ -51,7 +51,6 @@
 $(document).ready(() => {
     const socket = io.connect('/');
     let nickname = "";
-    let targetname = "";
     let callKey = "";
     let pc;
     let iceServer = {
@@ -89,6 +88,9 @@ $(document).ready(() => {
                 break;
             case "candidate":
                 candidateHandle(data);
+                break;
+            case "leave":
+                leaveHandle(data);
                 break;
             default:
                 break;
@@ -157,8 +159,6 @@ $(document).ready(() => {
         pc = new RTCPeerConnection(iceServer);
         //如果检测到媒体流连接到本地，将其绑定到一个video标签上输出
         pc.onaddstream = function(e){
-            console.log("1111111111111111111111111")
-            console.log(e)
             document.getElementById('video2').src = window.URL.createObjectURL(e.stream);
         };
         // 等候连接
@@ -168,7 +168,6 @@ $(document).ready(() => {
                     socket.send({
                         event: "candidate",
                         data: {
-                            targetname,
                             callKey,
                             candidate: e.candidate
                         }
@@ -249,7 +248,6 @@ $(document).ready(() => {
     function answerHandle(data) {
         callKey = data.callKey;
         pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-        targetname = data.callKey.split('-')[2];
     }
 
     /**
@@ -260,39 +258,50 @@ $(document).ready(() => {
         pc.addIceCandidate(new RTCIceCandidate(data.candidate));
     }
 
-    function initAnswer () {
-        let offer = document.getElementById('txt').value;
-        if (!offer) {
-            alert('未填写')
-        }
-        pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(offer)), function() {
-            pc.createAnswer(answer => {
-                pc.setLocalDescription(answer);
-            }, function (error) {
-                console.log(error)
-                alert("Error when creating an answer");
+    /**
+     * @name 取消通话
+     */ 
+    function leaveHandle() {
+        alert("通话已结束");
+        callKey = null;
+        document.getElementById('video2').src = null;
+        pc.close();
+        pc.onicecandidate = null;
+        pc.onaddstream = null;
+        if (pc.signalingState == 'closed') {
+            // 初始化连接
+            pc = new RTCPeerConnection(iceServer);
+            //如果检测到媒体流连接到本地，将其绑定到一个video标签上输出
+            pc.onaddstream = function(e){
+                document.getElementById('video2').src = window.URL.createObjectURL(e.stream);
+            };
+            // 等候连接
+            pc.onicecandidate = function(e){
+                setTimeout(function() {
+                    if (e.candidate) {
+                        socket.send({
+                            event: "candidate",
+                            data: {
+                                callKey,
+                                candidate: e.candidate
+                            }
+                        });
+                    }
+                })
+            };
+            getUserMedia.call(navigator, {
+                video: true,
+                audio: true
+            }, localMediaStream => {
+                let video = document.getElementById('video');
+                video.src = window.URL.createObjectURL(localMediaStream);
+                //向PeerConnection中加入需要发送的流
+                pc.addStream(localMediaStream);
+            }, e => {
+                console.log('Reeeejected!', e);
             });
-        }, (e) => {
-            alert('initAnswer Error!');
-            console.log('initAnswer Error!', e);
-        });
-    }
-
-    function handleAnswer() {
-        let answer = document.getElementById('txt2').value;
-        if (!answer) {
-            alert('未填写')
         }
-        pc.setRemoteDescription(new RTCSessionDescription(answer));
-    }
-
-    function connect() {
-        let candidate = document.getElementById('txt3').value;
-        if (!candidate) {
-            alert('未填写')
-        }
-        pc.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)));
-    }
+      }
 });
 </script>
 
