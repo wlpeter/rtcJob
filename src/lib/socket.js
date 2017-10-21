@@ -146,8 +146,8 @@ module.exports =  function(server) {
               delete callKeys[data.callKey];
               allUsers[socket.name] = 1;
               if (allUsers[socket.otherName]) {
-                allUsers[socket.otherName] = 1;
                 delete allSockets[socket.otherName].otherName;
+                allUsers[socket.otherName] = 1;
                 allSockets[socket.otherName].send({
                   event: "leave"
                 });
@@ -175,10 +175,10 @@ module.exports =  function(server) {
           if (allUsers[socket.otherName]) {
             delete allSockets[socket.otherName].otherName;
             allUsers[socket.otherName] = 1;
-            delete socket.otherName;
             allSockets[socket.otherName].send({
               event: "leave"
             });
+            delete socket.otherName;
           }
         }
         delete allUsers[socket.name];
